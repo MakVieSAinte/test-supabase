@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Supabase Auth Simple</title>
+</head>
+<body>
+  <h1>🔐 Authentification</h1>
+
+  <div id="auth-forms">
+    <h2>Créer un compte</h2>
+    <form id="signup-form">
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Mot de passe" required />
+      <button type="submit">S'inscrire</button>
+    </form>
+
+    <h2>Se connecter</h2>
+    <form id="login-form">
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Mot de passe" required />
+      <button type="submit">Se connecter</button>
+    </form>
+  </div>
+
+  <div id="user-info" style="display: none">
+    <p>✅ Connecté en tant que <span id="user-email"></span></p>
+    <button id="logout-btn">Se déconnecter</button>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabaseUrl = 'https://juvonyzgfkhxyidadlzt.supabase.co'  
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1dm9ueXpnZmtoeHlpZGFkbHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0NTEzNzQsImV4cCI6MjA2NjAyNzM3NH0.JCPPbEkOXQkIXg1aaK5dxYgE1SJqdzbXMmkhEw1Ca1M'  
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const signupForm = document.querySelector('#signup-form')
+    const loginForm = document.querySelector('#login-form')
+    const logoutBtn = document.querySelector('#logout-btn')
+    const authForms = document.querySelector('#auth-forms')
+    const userInfo = document.querySelector('#user-info')
+    const userEmail = document.querySelector('#user-email')
+
+    // Gère inscription
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const email = signupForm.email.value
+      const password = signupForm.password.value
+
+      const { error } = await supabase.auth.signUp({ email, password, options: {
+    redirectTo: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify'
+  } })
+
+      if (error) {
+        alert('Erreur inscription: ' + error.message)
+      } else {
+        alert('Inscription réussie ! Vérifie ta boîte mail pour valider ton compte.')
+        signupForm.reset()
+      }
+    })
+
+    // Gère connexion
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const email = loginForm.email.value
+      const password = loginForm.password.value
+
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password })
+
+      if (error) {
+        alert('Erreur connexion: ' + error.message)
+      } else {
+        alert('Connexion réussie')
+        loginForm.reset()
+        checkUser()
+      }
+    })
+
+    // Gère déconnexion
+    logoutBtn.addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      checkUser()
+    })
+
+    // Vérifie si un utilisateur est connecté
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        authForms.style.display = 'none'
+        userInfo.style.display = 'block'
+        userEmail.textContent = user.email
+      } else {
+        authForms.style.display = 'block'
+        userInfo.style.display = 'none'
+        userEmail.textContent = ''
+      }
+    }
+
+    checkUser() // vérifie à l’ouverture de la page
+  </script>
+</body>
+</html>

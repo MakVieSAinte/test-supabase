@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Supabase CRUD</title>
+  <style>
+    li { margin-bottom: 8px }
+    button { margin-left: 5px }
+  </style>
+</head>
+<body>
+  <h1>Ajouter ou modifier un contact</h1>
+  <form id="contact-form">
+    <input type="hidden" name="id" />
+    <input type="text" name="prenom" placeholder="Prénom" required />
+    <input type="text" name="nom" placeholder="Nom" required />
+    <button type="submit">Enregistrer</button>
+  </form>
+
+  <h2>Liste des contacts</h2>
+  <p id="total"></p>
+  <ul id="contact-list"></ul>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabaseUrl = 'https://juvonyzgfkhxyidadlzt.supabase.co'  
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1dm9ueXpnZmtoeHlpZGFkbHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0NTEzNzQsImV4cCI6MjA2NjAyNzM3NH0.JCPPbEkOXQkIXg1aaK5dxYgE1SJqdzbXMmkhEw1Ca1M'  
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const form = document.querySelector('#contact-form')
+    const list = document.querySelector('#contact-list')
+
+    async function fetchContacts() {
+      const { data, error, count } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: false })
+        .order('created_at', { ascending: false })
+        // .count()
+
+        document.querySelector('#total').textContent = `Total : ${count} contacts`
+
+      list.innerHTML = ''
+      data.forEach(({ id, prenom, nom }) => {
+        const li = document.createElement('li')
+        li.textContent = `${prenom} ${nom}`
+
+        // Bouton Modifier
+        const editBtn = document.createElement('button')
+        editBtn.textContent = '✏️ Modifier'
+        editBtn.onclick = () => {
+          form.id.value = id
+          form.prenom.value = prenom
+          form.nom.value = nom
+        }
+
+        // Bouton Supprimer
+        const deleteBtn = document.createElement('button')
+        deleteBtn.textContent = '🗑️ Supprimer'
+        deleteBtn.onclick = async () => {
+          await supabase.from('users').delete().eq('id', id)
+          fetchContacts()
+        }
+
+        li.appendChild(editBtn)
+        li.appendChild(deleteBtn)
+        list.appendChild(li)
+      })
+
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const id = form.id.value
+      const prenom = form.prenom.value
+      const nom = form.nom.value
+
+      if (id) {
+        // Mise à jour
+        await supabase.from('users').update({ prenom, nom }).eq('id', id)
+      } else {
+        // Ajout
+        await supabase.from('users').insert([{ prenom, nom }])
+      }
+
+      form.reset()
+      fetchContacts()
+    })
+
+    fetchContacts()
+  </script>
+</body>
+</html>
