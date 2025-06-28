@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Connexion OTP Supabase</title>
+</head>
+<body>
+  <h1>Connexion par lien magique (OTP)</h1>
+
+  <form id="otp-form">
+    <input type="email" name="email" placeholder="Ton email" required />
+    <button type="submit">Recevoir le lien magique</button>
+  </form>
+
+  <div id="user-info" style="display: none; margin-top: 20px;">
+    <p>Connecté en tant que : <span id="user-email"></span></p>
+    <button id="logout">Se déconnecter</button>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabase = createClient(
+      'https://juvonyzgfkhxyidadlzt.supabase.co',   // ← à remplacer
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1dm9ueXpnZmtoeHlpZGFkbHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0NTEzNzQsImV4cCI6MjA2NjAyNzM3NH0.JCPPbEkOXQkIXg1aaK5dxYgE1SJqdzbXMmkhEw1Ca1M'                      // ← à remplacer
+    )
+
+    const form = document.querySelector('#otp-form')
+    const userInfo = document.querySelector('#user-info')
+    const userEmail = document.querySelector('#user-email')
+    const logoutBtn = document.querySelector('#logout')
+
+    // Soumission du formulaire OTP
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const email = form.email.value
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          redirectTo: window.location.href // redirige ici après clic dans le mail
+        }
+      })
+
+      if (error) {
+        alert('Erreur : ' + error.message)
+      } else {
+        alert('Lien magique envoyé à ' + email)
+        form.reset()
+      }
+    })
+
+    logoutBtn.addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      checkUser()
+    })
+
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        userInfo.style.display = 'block'
+        userEmail.textContent = user.email
+      } else {
+        userInfo.style.display = 'none'
+        userEmail.textContent = ''
+      }
+    }
+
+    supabase.auth.onAuthStateChange((_event, _session) => {
+      checkUser()
+    })
+
+    checkUser()
+  </script>
+</body>
+</html>

@@ -5,9 +5,9 @@
   <title>Login Spotify avec Supabase</title>
 </head>
 <body>
-  <h1>🎵 Connexion avec Spotify</h1>
+  <h1>🎵 Connexion avec Google</h1>
 
-  <button id="spotify-login" style="background-color: red;">Se connecter avec Spotify</button>
+  <button id="spotify-login" style="background-color: red;">Se connecter avec Google</button>
 
   <div id="user-info" style="display: none; margin-top: 20px;">
     <p>Connecté en tant que : <span id="user-email"></span></p>
@@ -29,7 +29,7 @@
     // Lancer la connexion avec Spotify
     loginBtn.addEventListener('click', async () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'spotify',
+        provider: 'google',
         options: {
           redirectTo: "https://dev.to/coderslang/what-is-rimraf-and-how-to-use-it-in-node-js-ai0" 
         }
