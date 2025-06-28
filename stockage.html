@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Supabase Storage CRUD</title>
+</head>
+<body>
+  <h1>📁 Fichiers Supabase</h1>
+
+  <form id="upload-form">
+    <input type="file" name="file" required />
+    <button type="submit">📤 Uploader</button>
+  </form>
+
+  <ul id="file-list"></ul>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        const supabase = createClient(
+      'https://juvonyzgfkhxyidadlzt.supabase.co',    
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1dm9ueXpnZmtoeHlpZGFkbHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0NTEzNzQsImV4cCI6MjA2NjAyNzM3NH0.JCPPbEkOXQkIXg1aaK5dxYgE1SJqdzbXMmkhEw1Ca1M'                       
+    )
+
+    const bucket = 'teststockage'  
+    const listElement = document.querySelector('#file-list')
+    const uploadForm = document.querySelector('#upload-form')
+
+    // 📤 Upload d’un fichier
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const file = uploadForm.file.files[0]
+      if (!file) return
+
+      const filePath = `${Date.now()}-${file.name}`
+      const { error } = await supabase.storage.from(bucket).upload(filePath, file)
+
+      if (error) {
+        alert('Erreur d’upload : ' + error.message)
+      } else {
+        alert('Fichier uploadé !')
+        uploadForm.reset()
+        listFiles()
+      }
+    })
+
+    // 📥 Télécharger, 🗑️ supprimer, ou modifier un fichier
+    async function listFiles() {
+      const { data: files, error } = await supabase.storage.from(bucket).list()
+      listElement.innerHTML = ''
+
+      for (const file of files) {
+        const li = document.createElement('li')
+        li.textContent = file.name
+
+        // 📷 Image affichée si c’est une image
+        const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(file.name)
+        if (file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+          const img = document.createElement('img')
+          img.src = publicUrl.publicUrl
+          img.alt = file.name
+          img.width = 100
+          li.appendChild(img)
+        }
+
+        // 🔽 Bouton de téléchargement
+        const downloadBtn = document.createElement('button')
+        downloadBtn.textContent = '📥 Télécharger'
+        downloadBtn.onclick = async () => {
+          const { data, error } = await supabase.storage.from(bucket).download(file.name)
+          if (data) {
+            const url = URL.createObjectURL(data)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = file.name
+            a.click()
+          }
+        }
+
+        // 🗑️ Bouton de suppression
+        const deleteBtn = document.createElement('button')
+        deleteBtn.textContent = '🗑️ Supprimer'
+        deleteBtn.onclick = async () => {
+          await supabase.storage.from(bucket).remove([file.name])
+          listFiles()
+        }
+
+        // ✏️ Bouton de remplacement
+        const replaceBtn = document.createElement('button')
+        replaceBtn.textContent = '✏️ Remplacer'
+        replaceBtn.onclick = async () => {
+          const newFile = prompt('Donne le chemin d’un nouveau fichier (depuis ton ordi)')
+          if (newFile) {
+            const input = document.createElement('input')
+            input.type = 'file'
+            input.onchange = async () => {
+              const file = input.files[0]
+              await supabase.storage.from(bucket).update(file.name, file, {
+                upsert: true
+              })
+              listFiles()
+            }
+            input.click()
+          }
+        }
+
+        li.appendChild(downloadBtn)
+        li.appendChild(deleteBtn)
+        li.appendChild(replaceBtn)
+        listElement.appendChild(li)
+      }
+    }
+
+    listFiles()
+  </script>
+</body>
+</html>
